@@ -490,12 +490,12 @@ let currentUser = null;
 let existingImagePath = null;
 
 const BANNER_COLORS = {
-  Juice:  { from: '#fde68a', to: '#f59e0b' },
-  Chips:  { from: '#fca5a5', to: '#ef4444' },
-  Snack:  { from: '#a7f3d0', to: '#10b981' },
-  Drink:  { from: '#bfdbfe', to: '#3b82f6' },
-  Candy:  { from: '#f9a8d4', to: '#ec4899' },
-  Other:  { from: '#e5e7eb', to: '#9ca3af' },
+  Juice: { from: '#fde68a', to: '#f59e0b' },
+  Chips: { from: '#fca5a5', to: '#ef4444' },
+  Snack: { from: '#a7f3d0', to: '#10b981' },
+  Drink: { from: '#bfdbfe', to: '#3b82f6' },
+  Candy: { from: '#f9a8d4', to: '#ec4899' },
+  Other: { from: '#e5e7eb', to: '#9ca3af' }
 };
 
 const CATEGORY_EMOJI = {
@@ -605,22 +605,22 @@ function renderCard(e) {
 }
 
 async function signUp(email, password) {
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabaseClient.auth.signUp({ email, password });
   if (error) throw error;
 }
 
 async function logIn(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }
 
 async function logOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabaseClient.auth.signOut();
   if (error) throw error;
 }
 
 async function loadCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await supabaseClient.auth.getUser();
   if (error) throw error;
   currentUser = data.user || null;
   authStatus.textContent = currentUser ? `Logged in as ${currentUser.email}` : 'Not logged in';
@@ -630,7 +630,7 @@ async function attachSignedImageUrls() {
   for (const entry of entries) {
     if (!entry.image_path) continue;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .storage
       .from('food-images')
       .createSignedUrl(entry.image_path, 3600);
@@ -648,7 +648,7 @@ async function fetchEntries() {
     return;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('food_entries')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -683,7 +683,7 @@ async function uploadImageToSupabase(file) {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const filePath = `${currentUser.id}/${Date.now()}.${ext}`;
 
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .storage
     .from('food-images')
     .upload(filePath, file);
@@ -795,7 +795,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   }
 });
 
-supabase.auth.onAuthStateChange(async (_event, session) => {
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
   currentUser = session?.user || null;
   authStatus.textContent = currentUser ? `Logged in as ${currentUser.email}` : 'Not logged in';
   await fetchEntries();
@@ -873,7 +873,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     }
 
     if (editingId) {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('food_entries')
         .update({
           name: name,
@@ -890,7 +890,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 
       if (error) throw error;
     } else {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('food_entries')
         .insert([{
           user_id: currentUser.id,
@@ -958,7 +958,7 @@ document.getElementById('card-grid').addEventListener('click', async e => {
     try {
       const entry = entries.find(item => item.id === deleteId);
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('food_entries')
         .delete()
         .eq('id', deleteId)
@@ -967,7 +967,7 @@ document.getElementById('card-grid').addEventListener('click', async e => {
       if (error) throw error;
 
       if (entry?.image_path) {
-        await supabase.storage.from('food-images').remove([entry.image_path]);
+        await supabaseClient.storage.from('food-images').remove([entry.image_path]);
       }
 
       await fetchEntries();
